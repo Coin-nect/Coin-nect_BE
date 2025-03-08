@@ -1,6 +1,7 @@
 package com.myteam.household_book.transaction;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -135,6 +136,23 @@ public class TransactionController {
             return ResponseEntity.ok(responseMap);
         } else {
             throw new IllegalArgumentException("Invalid or missing id parameter");
+        }
+    }
+
+    // 9. 개별 상세 내역 조회
+    @GetMapping("/get")
+    public ResponseEntity<Map<String, Object>> getTransactionById(
+            @RequestParam(required = false) Long incomeId,
+            @RequestParam(required = false) Long usageId) {
+
+        // 서비스 호출
+        // userId 또는 usageId를 통해 조회
+        if (incomeId != null) {
+            return ResponseEntity.ok(transactionService.getIncomeById(incomeId));
+        } else if (usageId != null) {
+            return ResponseEntity.ok(transactionService.getUsageById(usageId));
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid or missing id parameter"));
         }
     }
 }

@@ -3,18 +3,22 @@ package com.myteam.household_book.transaction;
 
 import com.myteam.household_book.entity.Income;
 import com.myteam.household_book.entity.Usage;
+import com.myteam.household_book.repository.IncomeRepository;
 import com.myteam.household_book.repository.TransactionRepository;
+import com.myteam.household_book.repository.UsageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class TransactionGetService {
 
+    // 1. 특정 날의 지출 및 수입 내역 리스트 형식으로 조회 (userid, 날짜 파리미터로)
     @Autowired
     private TransactionRepository transactionRepository;
 
@@ -76,5 +80,57 @@ public class TransactionGetService {
         // 거래 내역이 있으면 리스트를 반환
         return new TransactionGetResponse(true, 1000, "성공",
                 new TransactionGetResponse.Result(date.format(DateTimeFormatter.ISO_LOCAL_DATE), totalIncome, totalExpense, transactions, null));
+    }
+
+
+    // 2. 개별 상세 내역 조회 (수입/지출 ID가 파라미터로)
+    @Autowired
+    private IncomeRepository incomeRepository;
+
+    @Autowired
+    private UsageRepository usageRepository;
+
+    // 수입 ID로 조회
+    public Map<String, Object> getIncomeById(Long incomeId) {
+        Income income = incomeRepository.findById(incomeId).orElse(null);
+        if (income == null) {
+            return Map.of("message", "Income not found");
+        }
+        // 응답 형식으로 변환
+        return Map.of("code", 1000, "message", "성공", "result", convertIncomeToResponse(income));
+    }
+
+    // 지출 ID로 조회
+    public Map<String, Object> getUsageById(Long usageId) {
+        Usage usage = usageRepository.findById(usageId).orElse(null);
+        if (usage == null) {
+            return Map.of("message", "Usage not found");
+        }
+        // 응답 형식으로 변환
+        return Map.of("code", 1000, "message", "성공", "result", convertUsageToResponse(usage));
+    }
+
+    // 수입 응답 변환
+    private Map<String, Object> convertIncomeToResponse(Income income) {
+        return Map.of(
+                "amount", income.getIncomePrice(),
+                "date", income.getIncomeDate().toString(),
+                "category", income.getIncomeCategory(),
+                "title", income.getIncomeTitle(),
+                "memo", income.getIncomeMemo(),
+                "type", "income"
+        );
+    }
+
+    // 지출 응답 변환
+    private Map<String, Object> convertUsageToResponse(Usage usage) {
+        return Map.of(
+                "amount", usage.getUsagePrice(),
+                "date", usage.getUsageDate().toString(),
+                "category", usage.getUsageCategory(),
+                "title", usage.getUsageTitle(),
+                "memo", usage.getUsageMemo(),
+                "type", "usage"
+        );
     }
 }
