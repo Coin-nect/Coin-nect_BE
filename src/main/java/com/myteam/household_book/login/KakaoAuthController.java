@@ -13,9 +13,9 @@ import java.util.Map;
 @RequestMapping("/auth/kakao")
 public class KakaoAuthController {
 
-    private static final String CLIENT_ID = "//노션참고 ";
-    private static final String REDIRECT_URI = "http://localhost:8080/auth/kakao/callback";
-    // 지금은 8080포트에서 테스트 가능하도록 해둠 나중에 배포 서버에서 테스트하려면 추가 환경 수정 필요.
+    private static final String CLIENT_ID = "f3583217e9748ae4e2b0a7a27e0fe440";
+    private static final String REDIRECT_URI = "http://localhost:2705/auth/kakao/callback";
+    // 지금은 2705포트에서 테스트 가능하도록 해둠 나중에 배포 서버에서 테스트하려면 추가 환경 수정 필요.
     @GetMapping("/login")
     public ResponseEntity<?> kakaoLogin() {
         String kakaoAuthUrl = "https://kauth.kakao.com/oauth/authorize"
