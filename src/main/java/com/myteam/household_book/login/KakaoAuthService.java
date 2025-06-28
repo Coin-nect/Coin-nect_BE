@@ -11,9 +11,9 @@ import java.util.Map;
 @Service
 public class KakaoAuthService {
 
-    private static final String CLIENT_ID = "//노션참고";
-    private static final String CLIENT_SECRET = "//노션참고";
-    private static final String REDIRECT_URI = "http://localhost:8080/auth/kakao/callback";
+    private static final String CLIENT_ID = "노션참고";
+    private static final String CLIENT_SECRET = "노션참고";
+    private static final String REDIRECT_URI = "http://localhost:2705/auth/kakao/callback";
     private static final String TOKEN_REQUEST_URL = "https://kauth.kakao.com/oauth/token";
 
     public String getKakaoAccessToken(String code) {
