@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository; //JpaRepository는
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 // JpaRepository를 상속받아 CRUD 작업을 자동으로 수행
@@ -23,4 +24,48 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
             @Param("userId") Long userId,
             @Param("keyword") String keyword
     );
+
+    // 카테고리별 소득 통계 (날짜 범위)
+    @Query("SELECT i.incomeCategory as categoryId, SUM(i.incomePrice) as totalAmount " +
+            "FROM Income i " +
+            "WHERE i.userId.userId = :userId " +
+            "AND i.incomeDate BETWEEN :startDate AND :endDate " +
+            "GROUP BY i.incomeCategory " +
+            "ORDER BY SUM(i.incomePrice) DESC")
+    List<Object[]> findIncomeStatsByCategory(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    // 월별 카테고리 통계 (기존 년/월 방식 활용)
+    @Query("SELECT i.incomeCategory as categoryId, SUM(i.incomePrice) as totalAmount " +
+            "FROM Income i " +
+            "WHERE i.userId.userId = :userId " +
+            "AND FUNCTION('YEAR', i.incomeDate) = :year " +
+            "AND FUNCTION('MONTH', i.incomeDate) = :month " +
+            "GROUP BY i.incomeCategory " +
+            "ORDER BY SUM(i.incomePrice) DESC")
+    List<Object[]> findIncomeStatsByCategoryForMonth(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("month") int month);
+
+    // 총 소득 계산 (날짜 범위)
+    @Query("SELECT SUM(i.incomePrice) FROM Income i " +
+            "WHERE i.userId.userId = :userId " +
+            "AND i.incomeDate BETWEEN :startDate AND :endDate")
+    Long findTotalIncomeByUserAndDateRange(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    // 월별 총 소득 (기존 방식 활용)
+    @Query("SELECT SUM(i.incomePrice) FROM Income i " +
+            "WHERE i.userId.userId = :userId " +
+            "AND FUNCTION('YEAR', i.incomeDate) = :year " +
+            "AND FUNCTION('MONTH', i.incomeDate) = :month")
+    Long findTotalIncomeByUserAndMonth(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("month") int month);
 }
