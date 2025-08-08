@@ -18,6 +18,9 @@ public class User {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(name = "kakao_id", unique = true)
+    private Long kakaoId;
+
     @Column(nullable = false)
     private String username;
 
