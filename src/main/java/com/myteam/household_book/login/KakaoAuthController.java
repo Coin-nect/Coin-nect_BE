@@ -1,5 +1,6 @@
 package com.myteam.household_book.login;
 
+import com.myteam.household_book.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,20 +28,24 @@ public class KakaoAuthController {
     }
 
     private final KakaoAuthService kakaoAuthService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public KakaoAuthController(KakaoAuthService kakaoAuthService) {
+    public KakaoAuthController(KakaoAuthService kakaoAuthService, JwtUtil jwtUtil) {
         this.kakaoAuthService = kakaoAuthService;
+        this.jwtUtil = jwtUtil;
     }
+
 
     @GetMapping("/callback")
     public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) {
-        // 1. 카카오에서 Access Token 받기
         String accessToken = kakaoAuthService.getKakaoAccessToken(code);
-
-        // 2. Access Token을 이용해 사용자 정보 가져오기
-        Map<String, Object> userInfo = kakaoAuthService.getUserInfo(accessToken);
-
-        return ResponseEntity.ok(userInfo);
+        String nickname = kakaoAuthService.getKakaoUserNickname(accessToken);
+        String jwt = jwtUtil.generateToken(nickname);
+        return ResponseEntity.ok(jwt);
     }
+
+
+
+
 }
