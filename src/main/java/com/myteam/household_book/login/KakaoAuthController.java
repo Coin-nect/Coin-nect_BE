@@ -3,10 +3,7 @@ package com.myteam.household_book.login;
 import com.myteam.household_book.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -45,7 +42,12 @@ public class KakaoAuthController {
         return ResponseEntity.ok(jwt);
     }
 
-
+    @GetMapping("/logout")
+    public ResponseEntity<String> kakaoLogout(@RequestHeader("Authorization") String token) {
+        String accessToken = token.replace("Bearer ", "");
+        kakaoAuthService.logoutKakaoUser(accessToken);
+        return ResponseEntity.ok("카카오 로그아웃 완료");
+    }
 
 
 }

@@ -17,8 +17,8 @@ import java.util.Optional;
 @Service
 public class KakaoAuthService {
 
-    private static final String CLIENT_ID = "//노션참고";
-    private static final String CLIENT_SECRET = "//노션참고";
+    private static final String CLIENT_ID = "f3583217e9748ae4e2b0a7a27e0fe440";
+    private static final String CLIENT_SECRET = "6mbQcw0p4w0kwwKI0BfzYDIel6SG94q3";
     private static final String REDIRECT_URI = "http://localhost:2705/auth/kakao/callback";
     private static final String TOKEN_REQUEST_URL = "https://kauth.kakao.com/oauth/token";
     private final RestTemplate restTemplate;
@@ -121,6 +121,17 @@ public class KakaoAuthService {
         }
 
         return nickname; // JWT 발급 시 사용
+    }
+
+    public void logoutKakaoUser(String accessToken) {
+        String logoutUrl = "https://kapi.kakao.com/v1/user/logout";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + accessToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        restTemplate.exchange(logoutUrl, HttpMethod.POST, request, String.class);
     }
 
 
