@@ -48,4 +48,14 @@ public class UserService {
                 user.getGender() != null ? user.getGender().name() : null
         );
     }
+
+    public void updateAlarmSetting(Long userId, boolean alarmEnabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        user.setAlarmEnabled(alarmEnabled);
+        userRepository.save(user);
+    }
+
+
 }

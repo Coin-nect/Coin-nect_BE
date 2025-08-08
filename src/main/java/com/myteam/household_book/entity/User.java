@@ -49,4 +49,8 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<UserCategory> userCategories;
 
+    @Column(nullable = false)
+    private boolean alarmEnabled = true; // 기본값: 알림 ON
+
+
 }
