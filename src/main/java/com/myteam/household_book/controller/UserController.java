@@ -1,5 +1,6 @@
 package com.myteam.household_book.controller;
 
+import com.myteam.household_book.dto.AlarmSettingRequest;
 import com.myteam.household_book.dto.UserProfileDto;
 import com.myteam.household_book.dto.UserProfileUpdateRequest;
 import com.myteam.household_book.service.UserService;
@@ -7,7 +8,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,5 +38,13 @@ public class UserController {
         log.info(">>> profile updated: username={}", updated.getUsername());
         return ResponseEntity.ok(updated);
     }
+
+    @PutMapping("/alarm")
+    public ResponseEntity<Map<String, String>> updateAlarmSetting(@RequestBody AlarmSettingRequest request) {
+        userService.updateAlarmSetting(request.getUserId(), request.isAlarmEnabled());
+        return ResponseEntity.ok(Map.of("message", "알림 설정이 성공적으로 변경되었습니다."));
+    }
+
+
 
 }
