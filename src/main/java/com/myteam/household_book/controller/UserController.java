@@ -1,8 +1,10 @@
 package com.myteam.household_book.controller;
 
 import com.myteam.household_book.dto.UserProfileDto;
+import com.myteam.household_book.dto.UserProfileUpdateRequest;
 import com.myteam.household_book.service.UserService;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,5 +31,12 @@ public class UserController {
     @PostConstruct
     public void init() { System.out.println(">>> UserController LOADED"); }
 
+    @PutMapping("/profile")
+    public ResponseEntity<UserProfileDto> updateProfile(@Valid @RequestBody UserProfileUpdateRequest req) {
+        log.info(">>> PUT /user/profile called, userId={}", req.getUserId());
+        UserProfileDto updated = userService.updateUserProfile(req);
+        log.info(">>> profile updated: username={}", updated.getUsername());
+        return ResponseEntity.ok(updated);
+    }
 
 }
