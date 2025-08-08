@@ -36,8 +36,8 @@ public class User {
 
     private Byte status;
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String email;
+    @Column(nullable = true, unique = true, length = 255)
+    private String email; // 회원만 이메일 가짐, 비회원은 null
 
     @Column(nullable = false, length = 255)
     private String password;
