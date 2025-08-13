@@ -6,6 +6,7 @@ import com.myteam.household_book.dto.UserProfileUpdateRequest;
 import com.myteam.household_book.entity.User;
 import com.myteam.household_book.jwt.JwtUtil;
 import com.myteam.household_book.repository.UserRepository;
+import com.myteam.household_book.security.CustomUserPrincipal;
 import com.myteam.household_book.service.UserService;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -51,20 +53,19 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "알림 설정이 성공적으로 변경되었습니다."));
     }
 
-    @DeleteMapping("/delete")
-    public ResponseEntity<String> deleteUser(HttpServletRequest request) {
-        String token = jwtUtil.extractTokenFromRequest(request);
-        String nickname = jwtUtil.extractUsername(token);
-
-        User user = userRepository.findByUsername(nickname)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        userRepository.delete(user);
-
-        return ResponseEntity.ok("회원 탈퇴 완료");
+    @GetMapping("/me")
+    public ResponseEntity<?> me(@AuthenticationPrincipal CustomUserPrincipal me) {
+        return ResponseEntity.ok(Map.of(
+                "userId", me.getId(),
+                "username", me.getUsername()
+        ));
     }
 
-
-
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteUser(
+            @AuthenticationPrincipal CustomUserPrincipal me) {
+        userRepository.deleteById(me.getId());
+        return ResponseEntity.noContent().build();
+    }
 
 }

@@ -1,10 +1,13 @@
 package com.myteam.household_book.repository;
 
+import com.myteam.household_book.dto.CategorySumDto;
 import com.myteam.household_book.entity.Usage;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -68,4 +71,54 @@ public interface UsageRepository extends JpaRepository<Usage, Long> {
             @Param("userId") Long userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    // 가장 이른 사용일
+    @Query("""
+       SELECT MIN(u.usageDate) FROM Usage u
+       WHERE u.userId.userId = :userId
+       """)
+    LocalDateTime findMinDateByUserId(@Param("userId") Long userId);
+
+    // 가장 늦은 사용일
+    @Query("""
+       SELECT MAX(u.usageDate) FROM Usage u
+       WHERE u.userId.userId = :userId
+       """)
+    LocalDateTime findMaxDateByUserId(@Param("userId") Long userId);
+
+    @Query("""
+select coalesce(sum(u.usagePrice),0)
+from Usage u
+where u.userId.userId = :userId
+  and u.usageDate >= :startDate and u.usageDate < :endDate
+""")
+    Long totalByMonth(@Param("userId") Long userId,
+                      @Param("startDate") LocalDateTime start,
+                      @Param("endDate") LocalDateTime end);
+
+    @Query("""
+select new com.myteam.household_book.dto.CategorySumDto(u.usageCategory, sum(u.usagePrice))
+from Usage u
+where u.userId.userId = :userId
+  and u.usageDate >= :startDate and u.usageDate < :endDate
+group by u.usageCategory
+order by sum(u.usagePrice) desc
+""")
+    List<CategorySumDto> sumByCategory(@Param("userId") Long userId,
+                                       @Param("startDate") LocalDateTime startDate,
+                                       @Param("endDate") LocalDateTime endDate);
+
+    // 지출 상세 리스트 (카테고리별)
+    @Query("""
+      select u
+      from Usage u
+      where u.userId.userId = :userId
+        and u.usageDate >= :start and u.usageDate < :end
+        and u.usageCategory = :categoryId
+      """)
+    Page<Usage> listByCategory(@Param("userId") Long userId,
+                               @Param("start") LocalDateTime start,
+                               @Param("end") LocalDateTime end,
+                               @Param("categoryId") Long categoryId,
+                               Pageable pageable);
 }

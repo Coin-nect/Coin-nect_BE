@@ -17,8 +17,8 @@ import java.util.Optional;
 @Service
 public class KakaoAuthService {
 
-    private static final String CLIENT_ID = "//노션 참고";
-    private static final String CLIENT_SECRET = "//노션 참고";
+    private static final String CLIENT_ID = "f3583217e9748ae4e2b0a7a27e0fe440";
+    private static final String CLIENT_SECRET = "6mbQcw0p4w0kwwKI0BfzYDIel6SG94q3";
     private static final String REDIRECT_URI = "http://localhost:2705/auth/kakao/callback";
     private static final String TOKEN_REQUEST_URL = "https://kauth.kakao.com/oauth/token";
     private final RestTemplate restTemplate;
@@ -95,33 +95,33 @@ public class KakaoAuthService {
     @Autowired
     private UserRepository userRepository;
 
-    public String handleKakaoUser(String accessToken) {
+    public User handleKakaoUser(String accessToken) {
         Map<String, Object> body = getUserInfo(accessToken);
+
         Long kakaoId = ((Number) body.get("id")).longValue();
-
         Map<String, Object> properties = (Map<String, Object>) body.get("properties");
-        String nickname = (String) properties.get("nickname");
-        String profileImage = (String) properties.get("profile_image");
+        String nickname = properties != null ? (String) properties.get("nickname") : null;
+        String profileImage = properties != null ? (String) properties.get("profile_image") : null;
 
-        Optional<User> existingUser = userRepository.findByKakaoId(kakaoId);
-
-        if (existingUser.isEmpty()) {
-            User newUser = new User();
-            newUser.setKakaoId(kakaoId);  // 이 필드는 User 엔티티에 추가되어야 함
-            newUser.setUsername(nickname);
-            newUser.setEmail("kakao_" + kakaoId + "@example.com");
-            newUser.setProfileImage(profileImage);
-            newUser.setPassword("kakao-login");
-            newUser.setUserBirthDate(LocalDate.of(2000, 1, 1));
-            newUser.setGender(User.Gender.O);
-            newUser.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-            newUser.setStatus((byte) 1);
-
-            userRepository.save(newUser);
-        }
-
-        return nickname; // JWT 발급 시 사용
+        return userRepository.findByKakaoId(kakaoId).map(u -> {
+            if (nickname != null && !nickname.isBlank()) u.setUsername(nickname);
+            if (profileImage != null) u.setProfileImage(profileImage);
+            return userRepository.save(u);
+        }).orElseGet(() -> {
+            User u = new User();
+            u.setKakaoId(kakaoId);
+            u.setUsername(nickname != null ? nickname : ("Kakao_" + kakaoId));
+            u.setEmail("kakao_" + kakaoId + "@example.com");
+            u.setProfileImage(profileImage);
+            u.setPassword("kakao-login");
+            u.setUserBirthDate(java.time.LocalDate.of(2000, 1, 1));
+            u.setGender(User.Gender.O);
+            u.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+            u.setStatus((byte) 1);
+            return userRepository.save(u);
+        });
     }
+
 
     public void logoutKakaoUser(String accessToken) {
         String logoutUrl = "https://kapi.kakao.com/v1/user/logout";
