@@ -1,5 +1,6 @@
 package com.myteam.household_book.login;
 
+import com.myteam.household_book.entity.User;
 import com.myteam.household_book.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -37,10 +38,11 @@ public class KakaoAuthController {
     @GetMapping("/callback")
     public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) {
         String accessToken = kakaoAuthService.getKakaoAccessToken(code);
-        String nickname = kakaoAuthService.getKakaoUserNickname(accessToken);
-        String jwt = jwtUtil.generateToken(nickname);
+        User user = kakaoAuthService.handleKakaoUser(accessToken);     // ▶ User 반환
+        String jwt = jwtUtil.generateToken(user.getUserId(), user.getUsername()); // ▶ uid 포함 발급
         return ResponseEntity.ok(jwt);
     }
+
 
     @GetMapping("/logout")
     public ResponseEntity<String> kakaoLogout(@RequestHeader("Authorization") String token) {

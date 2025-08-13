@@ -1,90 +1,87 @@
 package com.myteam.household_book.jwt;
 
+import com.myteam.household_book.security.CustomUserPrincipal;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
+import jakarta.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
-
-// 현재는 비밀키를 JwtUtil 내에서 임시로 생성하고 있음. 추후 application.properties에 키를 넣어서 관리하는 게 좋음.
 
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24시간
+    private final SecretKey key;
+    private final String issuer;
+    private final long accessTtlSeconds;
 
-    private Key getSigningKey() {
-        byte[] keyBytes = "mysecretkeymysecretkeymysecretkeymysecretkey".getBytes(); // 256비트 이상
-        return Keys.hmacShaKeyFor(keyBytes);
+    public JwtUtil(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.issuer}") String issuer,
+            @Value("${jwt.access-ttl-seconds:86400}") long accessTtlSeconds
+    ) {
+        // 항상 같은 키를 사용 (랜덤 키 금지)
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.issuer = issuer;
+        this.accessTtlSeconds = accessTtlSeconds;
     }
 
+    /** userId(uid) + username(sub) 포함해서 발급 */
+    public String generateToken(Long userId, String username) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(accessTtlSeconds);
 
-    // JWT 토큰 생성
-    public String generateToken(String nickname) {
         return Jwts.builder()
-                .setSubject(nickname)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(key)
+                .setIssuer(issuer)
+                .setSubject(username)             // sub: username(또는 email로 바꿔도 됨)
+                .claim("uid", userId)             // 커스텀 클레임: 우리 시스템 userId
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(exp))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-
-    // JWT 토큰에서 이메일 추출
-    public String validateAndGetEmail(String token) {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody()
-                    .getSubject();
-        } catch (JwtException e) {
-            throw new RuntimeException("JWT 유효성 검증 실패: " + e.getMessage());
-        }
-    }
-
-    public boolean validateToken(String token) {
+    /** 유효성만 확인 */
+    public boolean validate(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .setSigningKey(key)
+                    .requireIssuer(issuer)
+                    .setAllowedClockSkewSeconds(60)
                     .build()
-                    .parseClaimsJws(token);  // 예외 발생 없으면 유효
+                    .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException e) {
             return false;
         }
     }
 
-    public String extractEmail(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-
-        return claims.getSubject();  // 일반적으로 이메일이 subject에 저장됨
-    }
-
-    public String extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
-
-    public String extractUsername(String token) {
-        return Jwts.parserBuilder()
+    /** 토큰 → CustomUserPrincipal (SecurityContext 주입에 사용) */
+    public CustomUserPrincipal parseAndBuildPrincipal(String token) throws JwtException {
+        Jws<Claims> jws = Jwts.parserBuilder()
                 .setSigningKey(key)
+                .requireIssuer(issuer)
+                .setAllowedClockSkewSeconds(60)
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .parseClaimsJws(token);
+
+        Claims c = jws.getBody();
+        Long uid = c.get("uid", Number.class).longValue();
+        String sub = c.getSubject();
+        return new CustomUserPrincipal(uid, sub);
     }
 
-
+    /** 편의 메서드들 */
+    public String extractTokenFromRequest(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        return (bearer != null && bearer.startsWith("Bearer ")) ? bearer.substring(7) : null;
+    }
+    public String getSubject(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).requireIssuer(issuer).build()
+                .parseClaimsJws(token).getBody().getSubject();
+    }
 }

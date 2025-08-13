@@ -5,11 +5,13 @@ import com.myteam.household_book.dto.UserSignupRequestDto;
 import com.myteam.household_book.entity.User;
 import com.myteam.household_book.jwt.JwtUtil;
 import com.myteam.household_book.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Service
 public class AuthService {
@@ -49,6 +51,26 @@ public class AuthService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        return jwtUtil.generateToken(user.getUsername());
+        return jwtUtil.generateToken(user.getUserId(), user.getUsername());
+
+
     }
+
+    @Transactional
+    public User upsertKakaoUser(Long kakaoId, String nickname, String email) {
+        return userRepository.findByKakaoId(kakaoId).orElseGet(() -> {
+            User u = new User();
+            u.setKakaoId(kakaoId);
+            u.setUsername(nickname);
+            u.setEmail(email);
+            u.setPassword("kakao-oauth"); // 필요시 랜덤/인코딩
+            u.setGender(User.Gender.O);
+            u.setAlarmEnabled(false);
+            u.setStatus((byte)1);
+            u.setCreatedAt(Timestamp.from(Instant.now()));
+            u.setUserBirthDate(LocalDate.of(2000,1,1));
+            return userRepository.save(u);
+        });
+    }
+
 }
